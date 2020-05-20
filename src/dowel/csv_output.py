@@ -1,4 +1,5 @@
 """A `dowel.logger.LogOutput` for CSV files."""
+import os
 import csv
 import warnings
 
@@ -15,6 +16,8 @@ class CsvOutput(FileOutput):
 
     def __init__(self, file_name):
         super().__init__(file_name)
+        self._file_name = file_name
+        self._file_sections = [file_name+'_0']
         self._writer = None
         self._fieldnames = None
         self._warned_once = set()
@@ -35,19 +38,17 @@ class CsvOutput(FileOutput):
 
             if not self._writer:
                 self._fieldnames = set(to_csv.keys())
-                self._writer = csv.DictWriter(
-                    self._log_file,
-                    fieldnames=self._fieldnames,
-                    extrasaction='ignore')
+                self._init_writer()
                 self._writer.writeheader()
 
             if to_csv.keys() != self._fieldnames:
-                self._warn('Inconsistent TabularInput keys detected. '
-                           'CsvOutput keys: {}. '
-                           'TabularInput keys: {}. '
-                           'Did you change key sets after your first '
-                           'logger.log(TabularInput)?'.format(
-                               set(self._fieldnames), set(to_csv.keys())))
+                new_fields = set(to_csv.keys()).union(set(self._fieldnames))
+                if len(new_fields) > len(self._fieldnames):
+                    self._fieldnames = new_fields
+                    self._file_sections.append(self._file_name + '_{}'.format(len(self._file_sections)))
+                    self._log_file = open(self._file_sections[-1], 'w')
+                    self._init_writer()
+                    self._writer.writeheader()
 
             self._writer.writerow(to_csv)
 
@@ -55,6 +56,32 @@ class CsvOutput(FileOutput):
                 data.mark(k)
         else:
             raise ValueError('Unacceptable type.')
+
+    def dump(self, step=None):
+        super().dump()
+        if len(self._file_sections) > 1:
+            self._merge_file_sections()
+
+    def _merge_file_sections(self):
+        if len(self._file_sections) == 1:
+            return
+        os.rename(self._file_name, self._file_sections[0])
+        self._log_file = open(self._file_name, 'w')
+        self._init_writer()
+        self._writer.writeheader()
+        for sec_file_name in self._file_sections:
+            with open(sec_file_name)as f:
+                reader = csv.DictReader(f)
+                for r in reader:
+                    self._writer.writerow(r)
+            os.remove(sec_file_name)
+        self._file_sections = self._file_sections[:1]
+
+    def _init_writer(self):
+        self._writer = csv.DictWriter(
+            self._log_file,
+            fieldnames=sorted(list(self._fieldnames))
+        )
 
     def _warn(self, msg):
         """Warns the user using warnings.warn.

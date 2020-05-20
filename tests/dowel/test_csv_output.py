@@ -35,26 +35,24 @@ class TestCsvOutput:
         ]  # yapf: disable
         self.assert_csv_matches(correct)
 
-    def test_record_inconsistent(self):
-        foo = 1
-        bar = 10
-        self.tabular.record('foo', foo)
-        self.csv_output.record(self.tabular)
-        self.tabular.record('foo', foo * 2)
-        self.tabular.record('bar', bar * 2)
+    def test_inconsistent_keys(self):
+        for i in range(4):
+            self.tabular.record('itr', i)
+            self.tabular.record('loss', 100.0 / (2 + i))
 
-        with pytest.warns(CsvOutputWarning):
+            # the addition of new data to tabular breaks logging to CSV
+            if i > 1:
+                self.tabular.record('new_data', i)
+
             self.csv_output.record(self.tabular)
-
-        # this should not produce a warning, because we only warn once
-        self.csv_output.record(self.tabular)
-
-        self.csv_output.dump()
+            self.csv_output.dump()
 
         correct = [
-            {'foo': str(foo)},
-            {'foo': str(foo * 2)},
-        ]  # yapf: disable
+            {'itr': str(0), 'loss': str(50.0), 'new_data': ''},
+            {'itr': str(1), 'loss': str(100.0/3.), 'new_data': ''},
+            {'itr': str(2), 'loss': str(25.0), 'new_data': str(2)},
+            {'itr': str(3), 'loss': str(20.0), 'new_data': str(3)},
+        ]
         self.assert_csv_matches(correct)
 
     def test_empty_record(self):
