@@ -42,18 +42,10 @@ class CsvOutput(FileOutput):
                 self._writer.writeheader()
 
             if to_csv.keys() != self._fieldnames:
-                # self._warn('Inconsistent TabularInput keys detected. '
-                #            'CsvOutput keys: {}. '
-                #            'TabularInput keys: {}. '
-                #            'Did you change key sets after your first '
-                #            'logger.log(TabularInput)?'.format(
-                #                set(self._fieldnames), set(to_csv.keys())))
-
-                # new field appear
                 new_fields = set(to_csv.keys()).union(set(self._fieldnames))
                 if len(new_fields) > len(self._fieldnames):
                     self._fieldnames = new_fields
-                    self._file_sections.append(self._file_name + f'_{len(self._file_sections)}')
+                    self._file_sections.append(self._file_name + '_{}'.format(len(self._file_sections)))
                     self._log_file = open(self._file_sections[-1], 'w')
                     self._init_writer()
                     self._writer.writeheader()
@@ -69,7 +61,6 @@ class CsvOutput(FileOutput):
         super().dump()
         if len(self._file_sections) > 1:
             self._merge_file_sections()
-            self._file_sections = self._file_sections[:1]
 
     def _merge_file_sections(self):
         if len(self._file_sections) == 1:
@@ -84,12 +75,13 @@ class CsvOutput(FileOutput):
                 for r in reader:
                     self._writer.writerow(r)
             os.remove(sec_file_name)
+        self._file_sections = self._file_sections[:1]
 
     def _init_writer(self):
         self._writer = csv.DictWriter(
             self._log_file,
-            fieldnames=sorted(list(self._fieldnames)),
-            extrasaction='ignore')
+            fieldnames=sorted(list(self._fieldnames))
+        )
 
     def _warn(self, msg):
         """Warns the user using warnings.warn.

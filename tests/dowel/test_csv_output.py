@@ -35,29 +35,6 @@ class TestCsvOutput:
         ]  # yapf: disable
         self.assert_csv_matches(correct)
 
-    # conflicting functionality
-    # def test_record_inconsistent(self):
-    #     foo = 1
-    #     bar = 10
-    #     self.tabular.record('foo', foo)
-    #     self.csv_output.record(self.tabular)
-    #     self.tabular.record('foo', foo * 2)
-    #     self.tabular.record('bar', bar * 2)
-    #
-    #     with pytest.warns(CsvOutputWarning):
-    #         self.csv_output.record(self.tabular)
-    #
-    #     # this should not produce a warning, because we only warn once
-    #     self.csv_output.record(self.tabular)
-    #
-    #     self.csv_output.dump()
-    #
-    #     correct = [
-    #         {'foo': str(foo)},
-    #         {'foo': str(foo * 2)},
-    #     ]  # yapf: disable
-    #     self.assert_csv_matches(correct)
-
     def test_inconsistent_keys(self):
         for i in range(4):
             self.tabular.record('itr', i)
