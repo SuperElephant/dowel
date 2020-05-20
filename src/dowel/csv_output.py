@@ -88,7 +88,7 @@ class CsvOutput(FileOutput):
     def _init_writer(self):
         self._writer = csv.DictWriter(
             self._log_file,
-            fieldnames=self._fieldnames,
+            fieldnames=sorted(list(self._fieldnames)),
             extrasaction='ignore')
 
     def _warn(self, msg):
